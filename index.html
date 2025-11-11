@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biológiai és Környezeti Vizualizációk</title>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #d0f0c0 0%, #a8e6a3 100%);
+      color: #2c3e50;
+    }
+    h1 {
+      text-align: center;
+      color: #1b4332;
+      margin-bottom: 40px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+    .chart-container {
+      background: #ffffffcc;
+      padding: 25px;
+      margin: 25px auto;
+      border-radius: 14px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      max-width: 720px;
+      backdrop-filter: blur(5px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .chart-container:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+    }
+    .chart-description {
+      color: #2f4f4f;
+      margin-top: 15px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌿 Biológiai és Környezeti Vizualizációk 🌍</h1>
+  
+  <div class="chart-container">
+    <div id="chart1"></div>
+    <p class="chart-description">
+      <strong>Bar Chart:</strong> A különböző élőhelyek fajgazdagsága. A trópusi esőerdők és korallzátonyok a leggazdagabbak biodiverzitásban.
+    </p>
+  </div>
+
+  <div class="chart-container">
+    <div id="chart2"></div>
+    <p class="chart-description">
+      <strong>Line Chart:</strong> A Föld átlaghőmérsékletének emelkedése 1950 óta – a klímaváltozás egyértelmű bizonyítéka.
+    </p>
+  </div>
+
+  <div class="chart-container">
+    <div id="chart3"></div>
+    <p class="chart-description">
+      <strong>Area Chart:</strong> A növényborítottság arányának változása kontinensenként az elmúlt 50 évben.
+    </p>
+  </div>
+
+  <script>
+    // 1. BAR CHART - Fajok száma élőhelyenként
+    const barSpec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "title": {"text": "Fajok száma különböző élőhelyeken", "fontSize": 18, "color": "#1b4332"},
+      "width": 600,
+      "height": 300,
+      "background": "#ffffff",
+      "config": {
+        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
+        "style": {"cell": {"stroke": "transparent"}}
+      },
+      "data": {
+        "values": [
+          {"elohely": "Trópusi esőerdő", "fajok": 450},
+          {"elohely": "Korallzátony", "fajok": 380},
+          {"elohely": "Szavanna", "fajok": 220},
+          {"elohely": "Lombhullató erdő", "fajok": 180},
+          {"elohely": "Sivatag", "fajok": 95},
+          {"elohely": "Tundra", "fajok": 65}
+        ]
+      },
+      "mark": {"type": "bar", "color": "#27ae60", "cornerRadiusTopLeft": 4, "cornerRadiusTopRight": 4},
+      "encoding": {
+        "x": {"field": "elohely", "type": "nominal", "axis": {"title": "Élőhely", "labelAngle": -30}},
+        "y": {"field": "fajok", "type": "quantitative", "axis": {"title": "Fajok száma"}},
+        "tooltip": [{"field": "elohely"}, {"field": "fajok"}]
+      }
+    };
+
+    // 2. LINE CHART - Hőmérséklet változás
+    const lineSpec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "title": {"text": "Globális átlaghőmérséklet változása (1950–2020)", "fontSize": 18, "color": "#1b4332"},
+      "width": 600,
+      "height": 300,
+      "background": "#ffffff",
+      "config": {
+        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
+        "style": {"cell": {"stroke": "transparent"}}
+      },
+      "data": {
+        "values": [
+          {"ev": 1950, "homerseklet": 13.8},
+          {"ev": 1960, "homerseklet": 13.9},
+          {"ev": 1970, "homerseklet": 14.0},
+          {"ev": 1980, "homerseklet": 14.2},
+          {"ev": 1990, "homerseklet": 14.4},
+          {"ev": 2000, "homerseklet": 14.6},
+          {"ev": 2010, "homerseklet": 14.8},
+          {"ev": 2020, "homerseklet": 15.0}
+        ]
+      },
+      "mark": {"type": "line", "color": "#e74c3c", "point": {"filled": true, "color": "#c0392b"}, "strokeWidth": 3},
+      "encoding": {
+        "x": {"field": "ev", "type": "ordinal", "axis": {"title": "Év"}},
+        "y": {"field": "homerseklet", "type": "quantitative", "axis": {"title": "Hőmérséklet (°C)"}, "scale": {"domain": [13.5, 15.5]}},
+        "tooltip": [{"field": "ev"}, {"field": "homerseklet"}]
+      }
+    };
+
+    // 3. AREA CHART - Növényborítottság kontinensenként
+    const areaSpec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "title": {"text": "Növényborítottság aránya kontinensenként (1970–2020)", "fontSize": 18, "color": "#1b4332"},
+      "width": 600,
+      "height": 300,
+      "background": "#ffffff",
+      "config": {
+        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
+        "style": {"cell": {"stroke": "transparent"}}
+      },
+      "data": {
+        "values": [
+          {"ev": 1970, "kontinens": "Európa", "boritas": 35},
+          {"ev": 1980, "kontinens": "Európa", "boritas": 38},
+          {"ev": 1990, "kontinens": "Európa", "boritas": 40},
+          {"ev": 2000, "kontinens": "Európa", "boritas": 42},
+          {"ev": 2010, "kontinens": "Európa", "boritas": 44},
+          {"ev": 2020, "kontinens": "Európa", "boritas": 46},
+
+          {"ev": 1970, "kontinens": "Ázsia", "boritas": 48},
+          {"ev": 1980, "kontinens": "Ázsia", "boritas": 46},
+          {"ev": 1990, "kontinens": "Ázsia", "boritas": 45},
+          {"ev": 2000, "kontinens": "Ázsia", "boritas": 44},
+          {"ev": 2010, "kontinens": "Ázsia", "boritas": 43},
+          {"ev": 2020, "kontinens": "Ázsia", "boritas": 42},
+
+          {"ev": 1970, "kontinens": "Afrika", "boritas": 30},
+          {"ev": 1980, "kontinens": "Afrika", "boritas": 29},
+          {"ev": 1990, "kontinens": "Afrika", "boritas": 27},
+          {"ev": 2000, "kontinens": "Afrika", "boritas": 25},
+          {"ev": 2010, "kontinens": "Afrika", "boritas": 24},
+          {"ev": 2020, "kontinens": "Afrika", "boritas": 23}
+        ]
+      },
+      "mark": {"type": "area", "opacity": 0.7},
+      "encoding": {
+        "x": {"field": "ev", "type": "ordinal", "axis": {"title": "Év"}},
+        "y": {"field": "boritas", "type": "quantitative", "axis": {"title": "Növényborítottság (%)"}},
+        "color": {"field": "kontinens", "type": "nominal", "title": "Kontinens"},
+        "tooltip": [{"field": "kontinens"}, {"field": "ev"}, {"field": "boritas"}]
+      }
+    };
+
+    vegaEmbed('#chart1', barSpec);
+    vegaEmbed('#chart2', lineSpec);
+    vegaEmbed('#chart3', areaSpec);
+  </script>
+</body>
+</html>
