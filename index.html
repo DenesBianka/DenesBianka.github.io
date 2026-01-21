@@ -1,179 +1,860 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Biológiai és Környezeti Vizualizációk</title>
-  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HOLLYWOOD ANALYTICS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      padding: 20px;
-      background: linear-gradient(135deg, #d0f0c0 0%, #a8e6a3 100%);
-      color: #2c3e50;
+    :root{
+      --bg1:#0a0a0a; --bg2:#1a0a2e;
+      --mint:#00ffcc; --pink:#ff006e; --amber:#ffbe0b; --violet:#8338ec;
+      --text:#d7d7d7; --muted:rgba(215,215,215,0.82);
+      --grid:rgba(0,255,204,0.06);
+      --border:rgba(0,255,204,0.55);
+      --panelA:rgba(0,255,204,0.11);
+      --panelB:rgba(255,0,110,0.10);
+      --shadow:rgba(0,255,204,0.20);
+
+      --controlBg: rgba(0,0,0,0.55);
+      --controlBorder: rgba(0,255,204,0.55);
+      --controlBorderFocus: rgba(255,0,110,0.75);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    h1 {
-      text-align: center;
-      color: #1b4332;
-      margin-bottom: 40px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: var(--mono);
+      background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg1) 100%);
+      color: var(--mint);
+      overflow-x:hidden;
     }
-    .chart-container {
-      background: #ffffffcc;
-      padding: 25px;
-      margin: 25px auto;
+
+    .grid-bg{
+      position: fixed; inset:0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .wrap{
+      position: relative;
+      z-index:1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 18px 90px;
+    }
+
+    @keyframes slideDown { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px rgba(0,255,204,0.55), 0 0 40px rgba(0,255,204,0.25); }
+      50% { text-shadow: 0 0 30px rgba(0,255,204,0.70), 0 0 60px rgba(0,255,204,0.30), 0 0 80px rgba(0,255,204,0.18); }
+    }
+
+    .header{
+      text-align:center;
+      margin-bottom: 18px;
+      animation: slideDown 1s ease-out;
+    }
+    .titleRow{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 14px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .title{
+      margin:0;
+      font-size: clamp(2.1rem, 4vw, 3.2rem);
+      letter-spacing: 0.18rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--mint) 0%, var(--pink) 50%, var(--mint) 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color: transparent;
+      animation: glow 3s ease-in-out infinite;
+    }
+    .badge{
+      font-family: var(--sans);
+      color: rgba(0,255,204,0.85);
+      letter-spacing: 0.2rem;
+      font-size: 0.98rem;
+      margin: 0;
+    }
+
+    .panel{
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--panelA) 0%, var(--panelB) 100%);
+      box-shadow: 0 10px 40px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .row{ display:flex; gap: 14px; flex-wrap: wrap; }
+    .col{ flex: 1; min-width: 240px; }
+
+    /* FILTERS */
+    .filters{
+      padding: 16px 16px;
+      margin: 16px 0 16px;
+      animation: fadeIn 1s ease-out 0.2s both;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+    .filters h2{
+      margin: 0 0 10px;
+      color: var(--mint);
+      font-family: var(--mono);
+      letter-spacing: 0.08rem;
+      font-size: 1.20rem;
+    }
+
+    label{
+      display:block;
+      font-size: 0.88rem;
+      color: rgba(0,255,204,0.92);
+      letter-spacing: 0.07rem;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    select{
+      width: 100%;
+      padding: 11px 12px;
       border-radius: 14px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-      max-width: 720px;
-      backdrop-filter: blur(5px);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 2px solid var(--controlBorder);
+      background: var(--controlBg);
+      color: var(--text);
+      outline: none;
+      font-family: var(--mono);
+      box-shadow: 0 0 0 3px rgba(0,255,204,0.08);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
     }
-    .chart-container:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+    select:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 4px rgba(0,255,204,0.14), 0 10px 30px rgba(0,0,0,0.25);
     }
-    .chart-description {
-      color: #2f4f4f;
-      margin-top: 15px;
-      font-size: 15px;
-      line-height: 1.6;
+    select:focus{
+      border-color: var(--controlBorderFocus);
+      box-shadow: 0 0 0 5px rgba(255,0,110,0.18), 0 0 40px rgba(0,255,204,0.12);
+    }
+    .hint{ display:none; }
+
+    /* KPI */
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 14px;
+      margin: 16px 0 16px;
+      animation: fadeIn 1s ease-out 0.35s both;
+    }
+    .kpi{
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 2px solid rgba(0,255,204,0.28);
+      background: linear-gradient(135deg, rgba(26,10,46,0.82) 0%, rgba(10,10,10,0.92) 100%);
+      box-shadow: 0 10px 28px rgba(0,255,204,0.10);
+    }
+    .kpi .name{
+      font-family: var(--sans);
+      color: rgba(0,255,204,0.82);
+      font-size: 0.90rem;
+      letter-spacing: 0.08rem;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .kpi .val{
+      font-size: 1.55rem;
+      font-weight: 900;
+      letter-spacing: 0.04rem;
+      color: var(--mint);
+    }
+
+    /* FUN FACTS */
+    .insights{
+      padding: 16px 16px;
+      margin: 16px 0 16px;
+      animation: fadeIn 1s ease-out 0.45s both;
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.65;
+    }
+    .insights h2{
+      margin: 0 0 10px;
+      color: var(--mint);
+      font-family: var(--mono);
+      letter-spacing: 0.08rem;
+      font-size: 1.20rem;
+    }
+    .facts{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .fact{
+      border-radius: 16px;
+      border: 1px solid rgba(0,255,204,0.22);
+      background: rgba(0,0,0,0.40);
+      padding: 12px 12px;
+      box-shadow: 0 10px 24px rgba(0,255,204,0.08);
+    }
+    .fact .k{
+      font-family: var(--mono);
+      font-weight: 900;
+      letter-spacing: 0.06rem;
+      margin-bottom: 6px;
+    }
+    .fact .v{ margin:0; color: var(--text); }
+    .kPink{ color: var(--pink); }
+    .kAmber{ color: var(--amber); }
+    .kViolet{ color: var(--violet); }
+    .kMint{ color: var(--mint); }
+
+    /* CHARTS */
+    .chartBlock{
+      margin-top: 16px;
+      padding: 16px 16px 18px;
+      animation: fadeIn 1s ease-out 0.6s both;
+    }
+    .chartBlock h3{
+      margin: 4px 4px 10px;
+      font-size: 1.08rem;
+      letter-spacing: 0.08rem;
+      color: var(--mint);
+      border-bottom: 2px solid rgba(0,255,204,0.25);
+      padding-bottom: 8px;
+      font-family: var(--mono);
+    }
+    .mini{
+      margin: 0 4px 10px;
+      color: rgba(215,215,215,0.75);
+      font-family: var(--sans);
+      font-size: 0.92rem;
+    }
+    .canvas-wrap{
+      border-radius: 14px;
+      border: 1px solid rgba(0,255,204,0.20);
+      background: rgba(0,0,0,0.40);
+      padding: 10px;
+    }
+    .canvas-wrap canvas{
+      width: 100% !important;
+      height: 520px !important;
+    }
+    .explain{
+      margin: 10px 4px 0;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 1.02rem;
+      line-height: 1.75;
+    }
+
+    .error{
+      display:none;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 2px solid rgba(255,0,110,0.35);
+      background: rgba(255,0,110,0.10);
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    @media (max-width: 1100px){
+      .kpis{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .facts{ grid-template-columns: 1fr; }
+      .canvas-wrap canvas{ height: 460px !important; }
     }
   </style>
 </head>
+
 <body>
-  <h1>🌿 Biológiai és Környezeti Vizualizációk 🌍</h1>
-  
-  <div class="chart-container">
-    <div id="chart1"></div>
-    <p class="chart-description">
-      <strong>Bar Chart:</strong> A különböző élőhelyek fajgazdagsága. A trópusi esőerdők és korallzátonyok a leggazdagabbak biodiverzitásban.
-    </p>
-  </div>
+  <div class="grid-bg"></div>
 
-  <div class="chart-container">
-    <div id="chart2"></div>
-    <p class="chart-description">
-      <strong>Line Chart:</strong> A Föld átlaghőmérsékletének emelkedése 1950 óta – a klímaváltozás egyértelmű bizonyítéka.
-    </p>
-  </div>
+  <div class="wrap">
+    <div class="header">
+      <div class="titleRow">
+        <div style="font-size:34px; filter: drop-shadow(0 0 10px rgba(255,0,110,0.55)); color: var(--pink);">▦</div>
+        <h1 class="title">HOLLYWOOD ANALYTICS</h1>
+        <div style="font-size:34px; filter: drop-shadow(0 0 10px rgba(255,190,11,0.55)); color: var(--amber);">▣</div>
+      </div>
+      <p class="badge">Interaktív filmipari elemzés</p>
+    </div>
 
-  <div class="chart-container">
-    <div id="chart3"></div>
-    <p class="chart-description">
-      <strong>Area Chart:</strong> A növényborítottság arányának változása kontinensenként az elmúlt 50 évben.
-    </p>
+    <!-- FILTERS -->
+    <div class="panel filters">
+      <h2>Szűrők</h2>
+      <div class="row">
+        <div class="col">
+          <label for="genreSel">Műfaj</label>
+          <select id="genreSel"></select>
+        </div>
+        <div class="col">
+          <label for="mpaaSel">MPAA rating</label>
+          <select id="mpaaSel"></select>
+        </div>
+        <div class="col">
+          <label for="yearFromSel">Év – tól</label>
+          <select id="yearFromSel"></select>
+        </div>
+        <div class="col">
+          <label for="yearToSel">Év – ig</label>
+          <select id="yearToSel"></select>
+        </div>
+      </div>
+      <div class="hint" id="filterHint"></div>
+      <div class="error" id="errBox"></div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- FUN FACTS -->
+    <div class="panel insights">
+      <h2>Fun factek</h2>
+      <div class="facts" id="facts"></div>
+    </div>
+
+    <!-- 1) Horizontal bar -->
+    <div class="panel chartBlock">
+      <h3>1) Műfajok szerinti átlag bevétel</h3>
+      <div class="mini">Mit látsz: műfajonként az átlagos Worldwide Gross (a műfaj-szűrőtől függetlenül).</div>
+      <div class="canvas-wrap"><canvas id="cGenreAvg"></canvas></div>
+      <div class="explain" id="exGenreAvg"></div>
+    </div>
+
+    <!-- 2) Scatter log -->
+    <div class="panel chartBlock">
+      <h3>2) Költségvetés vs bevétel (log skála)</h3>
+      <div class="mini">Mit látsz: budget–bevétel kapcsolat a kiválasztott szűréssel.</div>
+      <div class="canvas-wrap"><canvas id="cScatter"></canvas></div>
+      <div class="explain" id="exScatter"></div>
+    </div>
+
+    <!-- 3) Vertical bar -->
+    <div class="panel chartBlock">
+      <h3>3) Évenkénti filmek száma</h3>
+      <div class="mini">Mit látsz: megjelenések száma évenként a kiválasztott szűréssel.</div>
+      <div class="canvas-wrap"><canvas id="cYearCount"></canvas></div>
+      <div class="explain" id="exYearCount"></div>
+    </div>
+
+    <!-- 4) Histogram -->
+    <div class="panel chartBlock">
+      <h3>4) IMDB értékelések eloszlása</h3>
+      <div class="mini">Mit látsz: értékelési sávok szerinti filmszám a kiválasztott szűréssel.</div>
+      <div class="canvas-wrap"><canvas id="cImdbHist"></canvas></div>
+      <div class="explain" id="exImdbHist"></div>
+    </div>
   </div>
 
   <script>
-    // 1. BAR CHART - Fajok száma élőhelyenként
-    const barSpec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "title": {"text": "Fajok száma különböző élőhelyeken", "fontSize": 18, "color": "#1b4332"},
-      "width": 600,
-      "height": 300,
-      "background": "#ffffff",
-      "config": {
-        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
-        "style": {"cell": {"stroke": "transparent"}}
-      },
-      "data": {
-        "values": [
-          {"elohely": "Trópusi esőerdő", "fajok": 450},
-          {"elohely": "Korallzátony", "fajok": 380},
-          {"elohely": "Szavanna", "fajok": 220},
-          {"elohely": "Lombhullató erdő", "fajok": 180},
-          {"elohely": "Sivatag", "fajok": 95},
-          {"elohely": "Tundra", "fajok": 65}
-        ]
-      },
-      "mark": {"type": "bar", "color": "#27ae60", "cornerRadiusTopLeft": 4, "cornerRadiusTopRight": 4},
-      "encoding": {
-        "x": {"field": "elohely", "type": "nominal", "axis": {"title": "Élőhely", "labelAngle": -30}},
-        "y": {"field": "fajok", "type": "quantitative", "axis": {"title": "Fajok száma"}},
-        "tooltip": [{"field": "elohely"}, {"field": "fajok"}]
-      }
+    // ---------- helpers ----------
+    const fmtUSD = (n) => {
+      const x = Number(n);
+      if (!isFinite(x)) return "—";
+      return x.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    };
+    const fmtUSDShort = (n) => {
+      const x = Number(n);
+      if (!isFinite(x)) return "—";
+      if (x >= 1e9) return (x/1e9).toFixed(2).replace(".", ",") + " Mrd $";
+      if (x >= 1e6) return (x/1e6).toFixed(1).replace(".", ",") + " M $";
+      return fmtUSD(x);
+    };
+    const fmtNum = (n) => (isFinite(n) ? n.toLocaleString("hu-HU") : "—");
+
+    const parseYear = (releaseDate) => {
+      if (!releaseDate || typeof releaseDate !== "string") return null;
+      const m = releaseDate.match(/(19|20)\d{2}/);
+      return m ? Number(m[0]) : null;
     };
 
-    // 2. LINE CHART - Hőmérséklet változás
-    const lineSpec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "title": {"text": "Globális átlaghőmérséklet változása (1950–2020)", "fontSize": 18, "color": "#1b4332"},
-      "width": 600,
-      "height": 300,
-      "background": "#ffffff",
-      "config": {
-        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
-        "style": {"cell": {"stroke": "transparent"}}
-      },
-      "data": {
-        "values": [
-          {"ev": 1950, "homerseklet": 13.8},
-          {"ev": 1960, "homerseklet": 13.9},
-          {"ev": 1970, "homerseklet": 14.0},
-          {"ev": 1980, "homerseklet": 14.2},
-          {"ev": 1990, "homerseklet": 14.4},
-          {"ev": 2000, "homerseklet": 14.6},
-          {"ev": 2010, "homerseklet": 14.8},
-          {"ev": 2020, "homerseklet": 15.0}
-        ]
-      },
-      "mark": {"type": "line", "color": "#e74c3c", "point": {"filled": true, "color": "#c0392b"}, "strokeWidth": 3},
-      "encoding": {
-        "x": {"field": "ev", "type": "ordinal", "axis": {"title": "Év"}},
-        "y": {"field": "homerseklet", "type": "quantitative", "axis": {"title": "Hőmérséklet (°C)"}, "scale": {"domain": [13.5, 15.5]}},
-        "tooltip": [{"field": "ev"}, {"field": "homerseklet"}]
+    const uniqSorted = (arr) => [...new Set(arr)].sort((a,b) => (a > b ? 1 : a < b ? -1 : 0));
+
+    function showError(msg) {
+      const b = document.getElementById("errBox");
+      b.style.display = "block";
+      b.textContent = msg;
+    }
+    function clearError() {
+      const b = document.getElementById("errBox");
+      b.style.display = "none";
+      b.textContent = "";
+    }
+
+    function setOptions(selectEl, values, { includeAll=false, allLabel="All" } = {}) {
+      selectEl.innerHTML = "";
+      if (includeAll) {
+        const opt = document.createElement("option");
+        opt.value = "All";
+        opt.textContent = allLabel;
+        selectEl.appendChild(opt);
       }
+      for (const v of values) {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        selectEl.appendChild(opt);
+      }
+    }
+
+    // KPI NOTE-ok eltávolítva (kérésed szerint)
+    function renderKpis({ total, avgBudget, avgGross, totalRevenue }) {
+      const el = document.getElementById("kpis");
+      el.innerHTML = "";
+      const items = [
+        { name: "Filmek száma", value: fmtNum(total) },
+        { name: "Átlag költségvetés", value: fmtUSDShort(avgBudget) },
+        { name: "Átlag bevétel", value: fmtUSDShort(avgGross) },
+        { name: "Teljes árbevétel", value: fmtUSDShort(totalRevenue) },
+      ];
+      for (const k of items) {
+        const div = document.createElement("div");
+        div.className = "kpi";
+        div.innerHTML =
+          `<div class="name">${k.name}</div>
+           <div class="val">${k.value}</div>`;
+        el.appendChild(div);
+      }
+    }
+
+    function renderFacts(items) {
+      const el = document.getElementById("facts");
+      el.innerHTML = "";
+      for (const it of items) {
+        const d = document.createElement("div");
+        d.className = "fact";
+        d.innerHTML = `<div class="k ${it.kClass}">${it.k}</div><p class="v">${it.v}</p>`;
+        el.appendChild(d);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ---------- preprocessing ----------
+    let RAW = [];
+    let BASE = [];
+
+    function preprocess(raw) {
+      return raw.map(r => ({
+        ...r,
+        __year: parseYear(r["Release Date"]),
+        "Major Genre": (r["Major Genre"] == null || r["Major Genre"] === "") ? "Unknown" : r["Major Genre"],
+        "MPAA Rating": (r["MPAA Rating"] == null || r["MPAA Rating"] === "") ? "Unknown" : r["MPAA Rating"]
+      }));
+    }
+
+    // ---------- filter UI ----------
+    const UI = {
+      genreSel: document.getElementById("genreSel"),
+      mpaaSel: document.getElementById("mpaaSel"),
+      yearFromSel: document.getElementById("yearFromSel"),
+      yearToSel: document.getElementById("yearToSel"),
+      hint: document.getElementById("filterHint"),
     };
 
-    // 3. AREA CHART - Növényborítottság kontinensenként
-    const areaSpec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "title": {"text": "Növényborítottság aránya kontinensenként (1970–2020)", "fontSize": 18, "color": "#1b4332"},
-      "width": 600,
-      "height": 300,
-      "background": "#ffffff",
-      "config": {
-        "axis": {"labelColor": "#2c3e50", "titleColor": "#2c3e50", "gridColor": "#e0e0e0"},
-        "style": {"cell": {"stroke": "transparent"}}
-      },
-      "data": {
-        "values": [
-          {"ev": 1970, "kontinens": "Európa", "boritas": 35},
-          {"ev": 1980, "kontinens": "Európa", "boritas": 38},
-          {"ev": 1990, "kontinens": "Európa", "boritas": 40},
-          {"ev": 2000, "kontinens": "Európa", "boritas": 42},
-          {"ev": 2010, "kontinens": "Európa", "boritas": 44},
-          {"ev": 2020, "kontinens": "Európa", "boritas": 46},
+    function initFilters() {
+      const yearsAll = BASE.map(r => r.__year).filter(Boolean);
+      const yearsUnique = uniqSorted(yearsAll);
 
-          {"ev": 1970, "kontinens": "Ázsia", "boritas": 48},
-          {"ev": 1980, "kontinens": "Ázsia", "boritas": 46},
-          {"ev": 1990, "kontinens": "Ázsia", "boritas": 45},
-          {"ev": 2000, "kontinens": "Ázsia", "boritas": 44},
-          {"ev": 2010, "kontinens": "Ázsia", "boritas": 43},
-          {"ev": 2020, "kontinens": "Ázsia", "boritas": 42},
-
-          {"ev": 1970, "kontinens": "Afrika", "boritas": 30},
-          {"ev": 1980, "kontinens": "Afrika", "boritas": 29},
-          {"ev": 1990, "kontinens": "Afrika", "boritas": 27},
-          {"ev": 2000, "kontinens": "Afrika", "boritas": 25},
-          {"ev": 2010, "kontinens": "Afrika", "boritas": 24},
-          {"ev": 2020, "kontinens": "Afrika", "boritas": 23}
-        ]
-      },
-      "mark": {"type": "area", "opacity": 0.7},
-      "encoding": {
-        "x": {"field": "ev", "type": "ordinal", "axis": {"title": "Év"}},
-        "y": {"field": "boritas", "type": "quantitative", "axis": {"title": "Növényborítottság (%)"}},
-        "color": {"field": "kontinens", "type": "nominal", "title": "Kontinens"},
-        "tooltip": [{"field": "kontinens"}, {"field": "ev"}, {"field": "boritas"}]
+      if (!yearsUnique.length) {
+        showError("Nem sikerült évszámot kinyerni a 'Release Date' mezőből. Ellenőrizd a dátumformátumot a JSON-ban.");
+        return;
       }
-    };
 
-    vegaEmbed('#chart1', barSpec);
-    vegaEmbed('#chart2', lineSpec);
-    vegaEmbed('#chart3', areaSpec);
+      const yearsInRange = yearsUnique.filter(y => y >= 1950 && y <= 2010);
+      const yearsForUI = yearsInRange.length ? yearsInRange : yearsUnique;
+
+      const genres = uniqSorted(BASE.map(r => r["Major Genre"]));
+      const mpaa = uniqSorted(BASE.map(r => r["MPAA Rating"]));
+
+      setOptions(UI.genreSel, genres, { includeAll: true, allLabel: "All (minden műfaj)" });
+      setOptions(UI.mpaaSel, mpaa, { includeAll: true, allLabel: "All (minden rating)" });
+
+      setOptions(UI.yearFromSel, yearsForUI.map(String));
+      setOptions(UI.yearToSel, yearsForUI.map(String));
+
+      UI.yearFromSel.value = String(yearsForUI[0]);
+      UI.yearToSel.value = String(yearsForUI[yearsForUI.length - 1]);
+
+      UI.hint.textContent = "";
+
+      const onChange = () => {
+        const yf = Number(UI.yearFromSel.value);
+        const yt = Number(UI.yearToSel.value);
+        if (yf > yt) UI.yearToSel.value = UI.yearFromSel.value;
+        refresh();
+      };
+
+      UI.genreSel.addEventListener("change", onChange);
+      UI.mpaaSel.addEventListener("change", onChange);
+      UI.yearFromSel.addEventListener("change", onChange);
+      UI.yearToSel.addEventListener("change", onChange);
+    }
+
+    function getFiltered({ ignoreGenre=false } = {}) {
+      const g = UI.genreSel.value;
+      const m = UI.mpaaSel.value;
+      const yf = Number(UI.yearFromSel.value);
+      const yt = Number(UI.yearToSel.value);
+
+      return BASE.filter(r => {
+        const y = r.__year;
+        if (!y) return false;
+        if (y < yf || y > yt) return false;
+        if (!ignoreGenre && g !== "All" && r["Major Genre"] !== g) return false;
+        if (m !== "All" && r["MPAA Rating"] !== m) return false;
+        return true;
+      });
+    }
+
+    // ---------- aggregations ----------
+    function groupByYearCount(rows) {
+      const m = new Map();
+      for (const r of rows) {
+        const y = r.__year;
+        if (!y) continue;
+        m.set(y, (m.get(y) || 0) + 1);
+      }
+      return [...m.entries()].sort((a,b) => a[0]-b[0]);
+    }
+
+    function avgGrossByGenre(rows) {
+      const m = new Map();
+      for (const r of rows) {
+        const g = r["Major Genre"] || "Unknown";
+        const ww = Number(r["Worldwide Gross"]);
+        if (!isFinite(ww) || ww <= 0) continue;
+        const cur = m.get(g) || { sum: 0, n: 0 };
+        cur.sum += ww; cur.n += 1;
+        m.set(g, cur);
+      }
+      const out = [...m.entries()].map(([g,v]) => ({ g, avg: v.sum / v.n, n: v.n }));
+      out.sort((a,b) => b.avg - a.avg);
+      return out;
+    }
+
+    function imdbHistogram(rows, step = 0.5) {
+      const bins = new Map();
+      for (let x = 0; x <= 10 + 1e-9; x += step) bins.set(x.toFixed(1), 0);
+
+      let used = 0;
+      for (const r of rows) {
+        const imdb = Number(r["IMDB Rating"]);
+        if (!isFinite(imdb)) continue;
+        used += 1;
+        const b = Math.floor(imdb / step) * step;
+        const key = b.toFixed(1);
+        if (bins.has(key)) bins.set(key, bins.get(key) + 1);
+      }
+      const labels = [...bins.keys()];
+      const values = labels.map(k => bins.get(k));
+      return { labels, values, used };
+    }
+
+    function scatterPoints(rows) {
+      const pts = [];
+      for (const r of rows) {
+        const b = Number(r["Production Budget"]);
+        const g = Number(r["Worldwide Gross"]);
+        if (!isFinite(b) || !isFinite(g) || b <= 0 || g <= 0) continue;
+        pts.push({ x: b, y: g });
+      }
+      return pts;
+    }
+
+    function findLowBudgetHighROI(rows) {
+      const cand = rows
+        .map(r => {
+          const b = Number(r["Production Budget"]);
+          const g = Number(r["Worldwide Gross"]);
+          if (!isFinite(b) || !isFinite(g) || b <= 0 || g <= 0) return null;
+          const roi = ((g - b) / b) * 100;
+          return { title: r["Title"] || "—", b, g, roi };
+        })
+        .filter(Boolean);
+
+      if (cand.length < 10) return null;
+
+      const budgets = cand.map(x => x.b).sort((a,b) => a-b);
+      const p20 = budgets[Math.floor(budgets.length * 0.2)] ?? budgets[0];
+      const low = cand.filter(x => x.b <= p20);
+      if (!low.length) return null;
+      low.sort((a,b) => b.roi - a.roi);
+      return { ...low[0], threshold: p20 };
+    }
+
+    function findHighBudgetFlop(rows) {
+      const cand = rows
+        .map(r => {
+          const b = Number(r["Production Budget"]);
+          const g = Number(r["Worldwide Gross"]);
+          if (!isFinite(b) || !isFinite(g) || b <= 0 || g <= 0) return null;
+          const profit = g - b;
+          return { title: r["Title"] || "—", b, g, profit };
+        })
+        .filter(Boolean);
+
+      if (cand.length < 10) return null;
+
+      const budgets = cand.map(x => x.b).sort((a,b) => a-b);
+      const p80 = budgets[Math.floor(budgets.length * 0.8)] ?? budgets[budgets.length - 1];
+      const high = cand.filter(x => x.b >= p80).filter(x => x.profit < 0);
+      if (!high.length) return null;
+
+      high.sort((a,b) => a.profit - b.profit);
+      return { ...high[0], threshold: p80 };
+    }
+
+    // ---------- FUN FACTS ----------
+    function computeFactsNarrative(rows) {
+      const facts = [];
+
+      const lowRoi = findLowBudgetHighROI(rows);
+      const highFlop = findHighBudgetFlop(rows);
+      const ag = avgGrossByGenre(rows).filter(x => x.g !== "Unknown");
+      const yc = groupByYearCount(rows);
+
+      let f1 = "A költségvetés önmagában nem garantál kasszasikert.";
+      if (lowRoi) f1 = `Alacsony budgetből is lehet kiugrás: ${escapeHtml(lowRoi.title)} ROI ≈ ${lowRoi.roi.toFixed(0)}%.`;
+      facts.push({ kClass: "kPink", k: "Költségvetés ≠ siker", v: f1 });
+
+      if (highFlop) {
+        facts.push({
+          kClass: "kViolet",
+          k: "A drága bukás is valós",
+          v: `${escapeHtml(highFlop.title)}: profit ${fmtUSD(highFlop.profit)}.`
+        });
+      } else {
+        facts.push({
+          kClass: "kViolet",
+          k: "Kockázat minden szinten",
+          v: "Azonos budget mellett is szélsőséges bevételek fordulnak elő."
+        });
+      }
+
+      if (ag.length) {
+        const top = ag[0];
+        facts.push({
+          kClass: "kAmber",
+          k: "Műfaji előny",
+          v: `A ${escapeHtml(top.g)} vezet: ≈ ${fmtUSDShort(top.avg)} átlagbevétel.`
+        });
+      } else {
+        facts.push({
+          kClass: "kAmber",
+          k: "Műfaji kép nem teljes",
+          v: "Kevés kitöltött bevétel-adat maradt."
+        });
+      }
+
+      if (yc.length) {
+        const max = [...yc].sort((a,b) => b[1]-a[1])[0];
+        facts.push({
+          kClass: "kMint",
+          k: "Időbeli csúcs",
+          v: `${max[0]}: ${fmtNum(max[1])} film.`
+        });
+      } else {
+        facts.push({
+          kClass: "kMint",
+          k: "Idősor korlát",
+          v: "Kevés évadat maradt."
+        });
+      }
+
+      return facts;
+    }
+
+    // ---------- charts ----------
+    let chGenreAvg, chScatter, chYearCount, chImdb;
+    function destroyIf(ch){ if (ch) ch.destroy(); }
+
+    function buildBarChart(canvasId, labels, values, {
+      horizontal=false, yTitle="", xTitle="", tooltipFmt=null
+    } = {}) {
+      return new Chart(document.getElementById(canvasId), {
+        type: "bar",
+        data: { labels, datasets: [{ label: yTitle || "Érték", data: values }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: horizontal ? "y" : "x",
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => tooltipFmt ? tooltipFmt(ctx.raw) : `${ctx.raw}` } }
+          },
+          scales: {
+            x: { title: { display: !!xTitle, text: xTitle }, ticks: { maxRotation: 60, minRotation: 40 } },
+            y: { beginAtZero: true, title: { display: !!yTitle, text: yTitle } }
+          }
+        }
+      });
+    }
+
+    function buildScatterLog(canvasId, points) {
+      return new Chart(document.getElementById(canvasId), {
+        type: "scatter",
+        data: { datasets: [{ label: "Filmek", data: points }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `Költségvetés: ${fmtUSD(ctx.raw.x)} | Bevétel: ${fmtUSD(ctx.raw.y)}` } }
+          },
+          scales: {
+            x: { type: "logarithmic", title: { display: true, text: "Production Budget (log)" }, min: 10000, max: 200000000 },
+            y: { type: "logarithmic", title: { display: true, text: "Worldwide Gross (log)" }, min: 10000, max: 5000000000 }
+          }
+        }
+      });
+    }
+
+    // ---------- refresh ----------
+    function refresh() {
+      clearError();
+
+      const rows = getFiltered();
+
+      // KPI-k (csak a 4 érték, extra felirat nélkül)
+      const total = rows.length;
+
+      let budgetSum = 0, budgetCnt = 0;
+      let grossSum = 0, grossCnt = 0;
+
+      for (const r of rows) {
+        const b = Number(r["Production Budget"]);
+        if (isFinite(b) && b > 0) { budgetSum += b; budgetCnt += 1; }
+        const g = Number(r["Worldwide Gross"]);
+        if (isFinite(g) && g > 0) { grossSum += g; grossCnt += 1; }
+      }
+
+      const avgBudget = budgetCnt ? (budgetSum / budgetCnt) : NaN;
+      const avgGross  = grossCnt ? (grossSum / grossCnt) : NaN;
+      const totalRevenue = grossSum;
+
+      renderKpis({ total, avgBudget, avgGross, totalRevenue });
+      renderFacts(computeFactsNarrative(rows));
+
+      // 1) műfaj átlagbevétel: ignoreGenre
+      const rowsForGenreChart = getFiltered({ ignoreGenre: true });
+      const ag = avgGrossByGenre(rowsForGenreChart);
+
+      destroyIf(chGenreAvg);
+      chGenreAvg = buildBarChart(
+        "cGenreAvg",
+        ag.map(x => x.g),
+        ag.map(x => Math.round(x.avg)),
+        { horizontal: true, yTitle: "Műfaj", xTitle: "Átlagos világbevétel (USD)", tooltipFmt: (v) => fmtUSD(v) }
+      );
+
+      const exGenreAvg = document.getElementById("exGenreAvg");
+      if (ag.length) {
+        const top = ag.find(x => x.g !== "Unknown") || ag[0];
+        exGenreAvg.textContent =
+          `Következtetés: az év és a rating szűrés mellett is látszik a műfajok közötti bevételi különbség. ` +
+          `A legerősebb átlagbevételt a "${top.g}" adja (≈ ${fmtUSDShort(top.avg)}).`;
+      } else {
+        exGenreAvg.textContent =
+          "Következtetés: ebben a szűrésben nincs elég kitöltött bevétel-adat, ezért műfaji rangsor nem vonható le megbízhatóan.";
+      }
+
+      // 2) scatter
+      const pts = scatterPoints(rows);
+      destroyIf(chScatter);
+      chScatter = buildScatterLog("cScatter", pts);
+
+      const exScatter = document.getElementById("exScatter");
+      if (pts.length >= 10) {
+        exScatter.textContent =
+          "Következtetés: a költségvetés növelése nem jelent automatikus bevételnövekedést. " +
+          "A szórás alapján a kockázat minden budget-szinten jelen van, ezért a döntéseket nem érdemes kizárólag a ráfordításra alapozni.";
+      } else {
+        exScatter.textContent =
+          "Következtetés: kevés olyan rekord maradt, ahol budget és bevétel is kitöltött, ezért a kapcsolat csak korlátozottan értékelhető.";
+      }
+
+      // 3) year count
+      const yc = groupByYearCount(rows);
+      destroyIf(chYearCount);
+      chYearCount = buildBarChart(
+        "cYearCount",
+        yc.map(([y]) => String(y)),
+        yc.map(([,c]) => c),
+        { horizontal: false, yTitle: "Filmek száma (db)", xTitle: "Év", tooltipFmt: (v) => `${fmtNum(v)} film` }
+      );
+
+      const exYearCount = document.getElementById("exYearCount");
+      if (yc.length) {
+        const max = [...yc].sort((a,b) => b[1]-a[1])[0];
+        exYearCount.textContent =
+          `Következtetés: a megjelenések nem egyenletesek, vannak kiugróan aktív évek. ` +
+          `A mintában a csúcsév ${max[0]} (${fmtNum(max[1])} film), ami erősebb piaci telítettséget jelezhet.`;
+      } else {
+        exYearCount.textContent =
+          "Következtetés: nincs elegendő évadat a jelenlegi szűrésben, így időbeli csúcsok nem azonosíthatók.";
+      }
+
+      // 4) imdb hist
+      const hist = imdbHistogram(rows, 0.5);
+      destroyIf(chImdb);
+      chImdb = buildBarChart(
+        "cImdbHist",
+        hist.labels,
+        hist.values,
+        { horizontal: false, yTitle: "Filmek száma (db)", xTitle: "IMDB értékelés (0,5-ös sávok)", tooltipFmt: (v) => `${fmtNum(v)} film` }
+      );
+
+      const exImdbHist = document.getElementById("exImdbHist");
+      if (hist.used >= 20) {
+        let maxIdx = 0;
+        for (let i = 1; i < hist.values.length; i++) if (hist.values[i] > hist.values[maxIdx]) maxIdx = i;
+        const modeBin = hist.labels[maxIdx];
+
+        exImdbHist.textContent =
+          `Következtetés: az értékelések a középtartomány köré koncentrálódnak. ` +
+          `Ebben a mintában a leggyakoribb sáv ~${modeBin}, ami azt sugallja, hogy a „jó” filmek gyakoribbak, mint a szélsőségek.`;
+      } else {
+        exImdbHist.textContent =
+          "Következtetés: kevés kitöltött IMDB értékelés maradt a szűrésben, ezért az eloszlásból óvatosan érdemes következtetni.";
+      }
+    }
+
+    // ---------- main ----------
+    async function main() {
+      const r = await fetch("filmek.json", { cache: "no-store" });
+      if (!r.ok) throw new Error("Nem találom a filmek.json-t az index.html mellett (ellenőrizd a fájlnevet és a mappát).");
+      RAW = await r.json();
+      if (!Array.isArray(RAW)) throw new Error("A filmek.json gyökere nem tömb (array).");
+
+      BASE = preprocess(RAW);
+
+      initFilters();
+      refresh();
+    }
+
+    main().catch(err => {
+      console.error(err);
+      showError(err.message);
+    });
   </script>
 </body>
 </html>
